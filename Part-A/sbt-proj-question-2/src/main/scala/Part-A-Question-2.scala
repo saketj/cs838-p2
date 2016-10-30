@@ -1,6 +1,6 @@
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.HashPartitioner
+import org.apache.spark.RangePartitioner
 
 object PartAQuestion2 {
 
@@ -24,15 +24,17 @@ object PartAQuestion2 {
     val num_iterations = if (args.length > 1) args(1).toInt else 10  // Default number of iterations is 10.
     val num_partitions = 40  // Number of partitions is set to 40
 
-    val customPartitioner = new HashPartitioner(num_partitions)
-
     // Load the dataset into a partitioned RDD assuming that the input data is uncompressed.
     val lines = sparkSession.sparkContext.textFile(args(0), num_partitions)  
 										     
-    val links = lines.map{ line =>
+    val rawLinks = lines.map{ line =>
       val urls = line.split("\\s+")
       (urls(0), urls(1))
-    }.groupByKey(customPartitioner)
+    }
+
+    val customPartitioner = new RangePartitioner(num_partitions, rawLinks)
+
+    val links = rawLinks.groupByKey(customPartitioner)
 
     var ranks = links.mapValues(rank => 1.0)  // Initial rank is set to 1.0.
 
