@@ -4,8 +4,7 @@ import org.apache.spark.sql.types._
 
 object PartBQuestion1 {
 	def main(args: Array[String]) {
-	if (args.length < 3) {
-	}
+	val directory = args(0)
 	val spark = SparkSession
 	    .builder
 	    .appName("CS-838-Assignment2-PartB-1")
@@ -24,7 +23,7 @@ object PartBQuestion1 {
 	val df = spark.readStream
 	    .option("sep", ",")
 	    .schema(tweetSchema)
-	    .csv("hdfs:///user/workload/part-b/split-dataset")
+	    .csv(directory)
 	val windowedCounts = df.groupBy(
 	    		   window($"timestamp", "60 minutes", "30 minutes")
 	    		   , $"interaction")
