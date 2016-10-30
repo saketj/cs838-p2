@@ -30,9 +30,8 @@ object PartBQuestion3 {
 	    .textFile(userListFile)
 	    .map(_.split(","))
 	    .first()
-	val filteredSchema = df.filter(col("userA")
-	    .isin(userList:_*))
-            .select("userA", "interaction")
+	val filteredSchema = df.filter(col("userA").isin(userList:_*))
+	    .select("userA")
 	    .groupBy("userA")
 	    .count()
 	val query = filteredSchema.writeStream
