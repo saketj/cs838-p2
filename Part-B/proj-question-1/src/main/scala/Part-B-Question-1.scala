@@ -35,6 +35,7 @@ object PartBQuestion1 {
 	    .outputMode("complete")
 	    .format("console")
 	    .option("truncate", "false")
+	    .option("numRows", 2147483646)
 	    .start()
 	query.awaitTermination()
 	}
