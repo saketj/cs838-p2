@@ -8,6 +8,7 @@ object PartBQuestion2 {
 	def main(args: Array[String]) {
 	val inputDirectory = args(0)
 	val outputDirectory = args(1)
+	val checkpointDirectory = args(2)
 	val spark = SparkSession
 	    .builder
 	    .appName("CS-838-Assignment2-PartB-2")
@@ -16,7 +17,7 @@ object PartBQuestion2 {
 	    .config("spark.driver.memory","1g")
 	    .config("spark.executor.cores","4")
 	    .config("spark.task.cpus","1")
-	    .config("spark.sql.streaming.checkpointLocation", "/user/ubuntu/part-b/checkpoint")
+	    .config("spark.sql.streaming.checkpointLocation", checkpointDirectory)
 	    .getOrCreate()
 	import spark.implicits._
 	val tweetSchema = new StructType()
