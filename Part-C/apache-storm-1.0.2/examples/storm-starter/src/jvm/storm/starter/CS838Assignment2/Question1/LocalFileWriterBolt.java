@@ -32,11 +32,11 @@ import org.apache.storm.tuple.Tuple;
 import twitter4j.Status;
 
 @SuppressWarnings("serial")
-public class FileWriterBolt extends BaseBasicBolt {   
+public class LocalFileWriterBolt extends BaseBasicBolt {   
     private String outputFilepath;    
     private int tweetCounter;
     
-    public FileWriterBolt(String outputFilepath) {
+    public LocalFileWriterBolt(String outputFilepath) {
 	this.outputFilepath = outputFilepath;
 	File outputFile = new File(outputFilepath);
 	try {
