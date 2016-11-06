@@ -4,6 +4,7 @@
 
 HOME=/home/ubuntu/cs838-p2
 OUTPUT_DIR=$HOME/output
+mkdir -p $OUTPUT_DIR 
 
 ssh ubuntu@vm-27-1 'sudo -S sh -c "sync; echo 3 > /proc/sys/vm/drop_caches"'
 ssh ubuntu@vm-27-2 'sudo -S sh -c "sync; echo 3 > /proc/sys/vm/drop_caches"'
