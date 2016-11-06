@@ -5,8 +5,8 @@ import org.apache.spark.RangePartitioner
 object PartAQuestion2 {
 
   def main(args: Array[String]) {
-    if (args.length < 1) {
-      System.err.println("The program expects at least one argument- the file location and number of iterations (optional)")
+    if (args.length < 2) {
+      System.err.println("The program expects at least two arguments- the file location, number of partitions and number of iterations (optional)")
       System.exit(1)
     }
 
@@ -21,8 +21,9 @@ object PartAQuestion2 {
       .config("spark.task.cpus", "1")
       .getOrCreate()
     
-    val num_iterations = if (args.length > 1) args(1).toInt else 10  // Default number of iterations is 10.
-    val num_partitions = 40  // Number of partitions is set to 40
+    val num_partitions = args(1).toInt
+    
+    val num_iterations = if (args.length > 2) args(2).toInt else 10  // Default number of iterations is 10.
 
     // Load the dataset into a partitioned RDD assuming that the input data is uncompressed.
     val lines = sparkSession.sparkContext.textFile(args(0), num_partitions)  
