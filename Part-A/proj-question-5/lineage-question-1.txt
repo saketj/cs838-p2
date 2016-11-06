@@ -1,0 +1,48 @@
+digraph finite_state_machine {
+	rankdir=LR;
+	//size="8,5"
+	//node [shape = rectangle]; LR_0 LR_3 LR_4 LR_8;
+	node [shape = rectangle];
+	"input file" -> "lines" [ label = "" ];
+        "lines" -> "links" [ label = "map" ];
+	//"lines" -> "rawLinks" [ label = "map" ];
+	//"rawLinks" -> "links" [ label = "groupByKey" ];
+	//"rawLinks" -> "customPartitioner" [ label = "map" ];
+	"links" -> "ranks_0" [ label = "mapValues" ];
+	"links" -> "contribs_1" [ label = "join" ];
+	"ranks_0" -> "contribs_1" [ label = "" ];
+	"contribs_1" -> "ranks_1" [ label = "reduceByKey" ];
+	"links" -> "contribs_2" [ label = "join" ];
+	"ranks_1" -> "contribs_2" [ label = "" ];
+	"contribs_2" -> "ranks_2" [ label = "reduceByKey" ];
+	"links" -> "contribs_3" [ label = "join" ];
+	"ranks_2" -> "contribs_3" [ label = "" ];
+	"contribs_3" -> "ranks_3" [ label = "reduceByKey" ];
+	"links" -> "contribs_4" [ label = "join" ];
+	"ranks_3" -> "contribs_4" [ label = "" ];
+	"contribs_4" -> "ranks_4" [ label = "reduceByKey" ];
+
+	"links" -> "contribs_5" [ label = "join" ];
+	"ranks_4" -> "contribs_5" [ label = "" ];
+	"contribs_5" -> "ranks_5" [ label = "reduceByKey" ];
+
+	"links" -> "contribs_6" [ label = "join" ];
+	"ranks_5" -> "contribs_6" [ label = "" ];
+	"contribs_6" -> "ranks_6" [ label = "reduceByKey" ];
+
+	"links" -> "contribs_7" [ label = "join" ];
+	"ranks_6" -> "contribs_7" [ label = "" ];
+	"contribs_7" -> "ranks_7" [ label = "reduceByKey" ];
+
+	"links" -> "contribs_8" [ label = "join" ];
+	"ranks_7" -> "contribs_8" [ label = "" ];
+	"contribs_8" -> "ranks_8" [ label = "reduceByKey" ];
+
+	"links" -> "contribs_9" [ label = "join" ];
+	"ranks_8" -> "contribs_9" [ label = "" ];
+	"contribs_9" -> "ranks_9" [ label = "reduceByKey" ];
+
+	"links" -> "contribs_10" [ label = "join" ];
+	"ranks_9" -> "contribs_10" [ label = "" ];
+	"contribs_10" -> "ranks_10" [ label = "reduceByKey" ];
+}
