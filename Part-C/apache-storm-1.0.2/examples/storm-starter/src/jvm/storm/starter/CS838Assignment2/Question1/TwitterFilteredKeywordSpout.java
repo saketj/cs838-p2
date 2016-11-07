@@ -21,6 +21,15 @@ package storm.starter.CS838Assignment2.Question1;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.apache.storm.Config;
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.topology.base.BaseRichSpout;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.Utils;
+
 import twitter4j.FilterQuery;
 import twitter4j.StallWarning;
 import twitter4j.Status;
@@ -30,15 +39,6 @@ import twitter4j.TwitterStream;
 import twitter4j.TwitterStreamFactory;
 import twitter4j.auth.AccessToken;
 import twitter4j.conf.ConfigurationBuilder;
-
-import org.apache.storm.Config;
-import org.apache.storm.spout.SpoutOutputCollector;
-import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseRichSpout;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.Utils;
 
 @SuppressWarnings("serial")
 public class TwitterFilteredKeywordSpout extends BaseRichSpout {
@@ -65,6 +65,7 @@ public class TwitterFilteredKeywordSpout extends BaseRichSpout {
 		// TODO Auto-generated constructor stub
 	}
 
+	@SuppressWarnings("rawtypes")
 	@Override
 	public void open(Map conf, TopologyContext context,
 			SpoutOutputCollector collector) {
@@ -131,7 +132,8 @@ public class TwitterFilteredKeywordSpout extends BaseRichSpout {
 		if (ret == null) {
 			Utils.sleep(50);
 		} else {
-			_collector.emit(new Values(ret));
+		    	// From the collected tweet, just emit the text.
+			_collector.emit(new Values(ret.getText()));
 
 		}
 	}

@@ -26,20 +26,16 @@ public class TweetProcessorBolt extends BaseRichBolt {
     List<String> _hashtags;
     int _friendsCount;
     int _emitCounter;
-    HashSet<String> _bufferedTweets;
-    HashSet<String> _bufferedWords;
-    HashSet<String> _stopwords;
+    HashSet<String> _bufferedTweets;    
     OutputCollector _collector;    
     final static int DEFAULT_EMIT_FREQUENCY_IN_SECONDS = 30;    
     
-    public TweetProcessorBolt(List<String> hashtags, HashSet<String> stopwords) {
+    public TweetProcessorBolt(List<String> hashtags) {
 	_emitCounter = 0;
 	_tweetCounter = 0;
 	this._hashtags = new ArrayList<String>();
 	this._friendsCount = 0;
-	this._bufferedTweets = new HashSet<String>();
-	this._bufferedWords = new HashSet<String>();
-	this._stopwords = stopwords;
+	this._bufferedTweets = new HashSet<String>();		
     }
     
     @SuppressWarnings("rawtypes")
@@ -54,18 +50,12 @@ public class TweetProcessorBolt extends BaseRichBolt {
 	if (TupleUtils.isTick(tuple)) {	      
 	      emitTweets();	      
 	} else if (tuple.getSourceComponent().equals("hashtagSpout")) {	    
-	    List<String> randomHashtags = (List<String>) tuple.getValue(0);
-	    System.out.print("Random hashtags from spout: ");
-	    for (String value : randomHashtags) {
-		System.out.print(value + "\t");		
-	    }
-	    System.out.println();
+	    List<String> randomHashtags = (List<String>) tuple.getValue(0);	    
 	    _hashtags.clear();
 	    _hashtags.addAll(randomHashtags);
 	    Collections.sort(_hashtags);
 	} else if (tuple.getSourceComponent().equals("friendsCountSpout")) {	    
-	    Integer friendCount = (Integer) tuple.getValue(0);
-	    System.out.println("Random friendCount from spout: " + friendCount);
+	    Integer friendCount = (Integer) tuple.getValue(0);	    
 	    _friendsCount = friendCount;
 	} else {	    
     	    Status tweet = (Status) tuple.getValueByField("tweet");
@@ -73,8 +63,7 @@ public class TweetProcessorBolt extends BaseRichBolt {
     		// Check if any of the hashtags value match the current set of hashtags
     		if (Collections.binarySearch(_hashtags, hashtagEntity.getText().toLowerCase()) >= 0
     			&& tweet.getUser().getFriendsCount() < _friendsCount) {
-    		    String tweetText = tweet.getText();
-    		    processTweetWords(tweetText);
+    		    String tweetText = tweet.getText();    		    
     		    _bufferedTweets.add(tweetText);
     		    ++_tweetCounter;
     		}
@@ -84,7 +73,7 @@ public class TweetProcessorBolt extends BaseRichBolt {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer ofd) {
-	ofd.declare(new Fields("emitCounter", "word"));
+	ofd.declare(new Fields("emitCounter", "tweet"));
     }
     
     @Override
@@ -92,52 +81,13 @@ public class TweetProcessorBolt extends BaseRichBolt {
       Map<String, Object> conf = new HashMap<String, Object>();
       conf.put(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, DEFAULT_EMIT_FREQUENCY_IN_SECONDS);
       return conf;
-    }
+    }         
     
-    private void processTweetWords(String tweet) {
-	String words[] = tweet.split("\\s+");
-	for (String word : words) {	    
-	    if (!isStopWord(word.trim().toLowerCase())) {
-		_bufferedWords.add(word.trim().toLowerCase());
-	    }
-	}
-    }    
-    
-    private void emitTweets() {
-	System.out.println("Emitting tweets for emit counter : " + formatCounter(_emitCounter));
+    private void emitTweets() {	
 	for (String tweet : _bufferedTweets) {
-	    //System.out.println(tweet);
-	}
-	for (String word : _bufferedWords) {
-	    System.out.print(word + ",");
-	    _collector.emit(new Values(_emitCounter, word));   
-	}
-	System.out.println();
+	    _collector.emit(new Values(_emitCounter, tweet));
+	}		
 	++_emitCounter;
-	_bufferedTweets.clear();
-	_bufferedWords.clear();
-    }
-    
-    private boolean isStopWord(String word) {
-	if (word.length() == 0) return true;
-	if (_stopwords.contains(word)) return true;
-	for (int i = 0; i < word.length(); ++i) {
-	    if (!Character.isAlphabetic(word.charAt(i))) {
-		return true;
-	    }
-	}
-	return false;
-    }
-           
-    private String formatCounter(int counter) {
-	StringBuilder sb = new StringBuilder();
-	if (counter <= 9) {
-	    sb.append("00" + counter);
-	} else if (counter <= 99) {
-	    sb.append("0" + counter);
-	} else {
-	    sb.append(counter);
-	}
-	return sb.toString();
+	_bufferedTweets.clear();	
     }
 }

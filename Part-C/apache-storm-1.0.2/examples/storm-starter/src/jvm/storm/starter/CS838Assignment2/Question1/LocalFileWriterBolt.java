@@ -29,8 +29,6 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseBasicBolt;
 import org.apache.storm.tuple.Tuple;
 
-import twitter4j.Status;
-
 @SuppressWarnings("serial")
 public class LocalFileWriterBolt extends BaseBasicBolt {   
     private String outputFilepath;    
@@ -49,13 +47,13 @@ public class LocalFileWriterBolt extends BaseBasicBolt {
 
     @Override
     public void execute(Tuple tuple, BasicOutputCollector collector) {
-	Status tweet = (Status) tuple.getValueByField("tweet");	
+	String tweet = (String) tuple.getValueByField("tweet");	
 	try {
 	    BufferedWriter localFileWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFilepath, true),"UTF-8"));	    
-	    localFileWriter.write(tweet.getCreatedAt() + "\t" + tweet.getText());
+	    localFileWriter.write(tweet);
 	    localFileWriter.newLine();
 	    localFileWriter.close();
-	} catch (IOException e) {	    
+	} catch (IOException e) {
 	    e.printStackTrace();
 	}	
 	System.out.println("Curret processed tweet count = " + (++tweetCounter));
