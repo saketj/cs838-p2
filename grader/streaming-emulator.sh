@@ -8,15 +8,15 @@ datasetCopy=/user/ubuntu/cs-838/part-b/workload/dataset-copy/
 datasetStreamDirectory=/user/ubuntu/cs-838/part-b/workload/dataset-stream/
 sleepTime=5s
 
-echo Removing dataset-copy
-hadoop fs -rm -r $datasetCopy
-echo Creating copy before streaming
-hadoop fs -mkdir -p $datasetCopy
+echo Removing files from dataset-copy
+hadoop fs -rm -r $datasetCopy*
+echo Copying data into a temporary folder before starting streaming
+#hadoop fs -mkdir -p $datasetCopy
 hadoop fs -cp $datasetOriginal*.csv $datasetCopy
-echo Removing old stream dataset folder
-hadoop fs -rm -r $datasetStreamDirectory
-echo Creating folder for stream dataset
-hadoop fs -mkdir -p $datasetStreamDirectory
+echo Removing files old stream dataset folder
+hadoop fs -rm -r $datasetStreamDirectory*
+#echo Creating folder for stream dataset
+#hadoop fs -mkdir -p $datasetStreamDirectory
 
 echo Moving data for streaming
 for i in {1..1027}
