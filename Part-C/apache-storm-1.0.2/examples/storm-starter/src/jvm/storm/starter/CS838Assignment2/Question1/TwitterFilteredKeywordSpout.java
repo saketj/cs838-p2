@@ -22,12 +22,17 @@ import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.storm.Config;
+import org.apache.storm.generated.AuthorizationException;
+import org.apache.storm.generated.Nimbus.Client;
+import org.apache.storm.generated.NotAliveException;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
+import org.apache.storm.thrift.TException;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Values;
+import org.apache.storm.utils.NimbusClient;
 import org.apache.storm.utils.Utils;
 
 import twitter4j.FilterQuery;
@@ -44,21 +49,31 @@ import twitter4j.conf.ConfigurationBuilder;
 public class TwitterFilteredKeywordSpout extends BaseRichSpout {
 
 	SpoutOutputCollector _collector;
-	LinkedBlockingQueue<Status> queue = null;
+	Client _client;
+	LinkedBlockingQueue<Status> _queue = null;	
 	TwitterStream _twitterStream;
-	String consumerKey;
-	String consumerSecret;
-	String accessToken;
-	String accessTokenSecret;
-	String[] keyWords;
+	String _consumerKey;
+	String _consumerSecret;
+	String _accessToken;
+	String _accessTokenSecret;
+	String[] _keyWords;
+	String _executionMode;
+	String _topologyName;
+	int _tweetCounter;	
+	
+	final static int MAX_OUTPUT_TWEET_COUNT = 5000000;
 
 	public TwitterFilteredKeywordSpout(String consumerKey, String consumerSecret,
-			String accessToken, String accessTokenSecret, String[] keyWords) {
-		this.consumerKey = consumerKey;
-		this.consumerSecret = consumerSecret;
-		this.accessToken = accessToken;
-		this.accessTokenSecret = accessTokenSecret;
-		this.keyWords = keyWords;
+			String accessToken, String accessTokenSecret, String[] keyWords, 
+			String topologyName, String mode) {
+		this._consumerKey = consumerKey;
+		this._consumerSecret = consumerSecret;
+		this._accessToken = accessToken;
+		this._accessTokenSecret = accessTokenSecret;
+		this._keyWords = keyWords;
+		this._topologyName = topologyName;
+		this._executionMode = mode;
+		this._tweetCounter = 0;		
 	}
 
 	public TwitterFilteredKeywordSpout() {
@@ -69,15 +84,18 @@ public class TwitterFilteredKeywordSpout extends BaseRichSpout {
 	@Override
 	public void open(Map conf, TopologyContext context,
 			SpoutOutputCollector collector) {
-		queue = new LinkedBlockingQueue<Status>(1000);
+		_queue = new LinkedBlockingQueue<Status>(1000);
 		_collector = collector;
+		if (_executionMode.equals("cluster")) {
+		    _client = NimbusClient.getConfiguredClient(conf).getClient();
+		}
 
 		StatusListener listener = new StatusListener() {
 
 			@Override
 			public void onStatus(Status status) {
 			
-				queue.offer(status);
+				_queue.offer(status);
 			}
 
 			@Override
@@ -109,18 +127,18 @@ public class TwitterFilteredKeywordSpout extends BaseRichSpout {
 				.getInstance();
 
 		_twitterStream.addListener(listener);
-		_twitterStream.setOAuthConsumer(consumerKey, consumerSecret);
-		AccessToken token = new AccessToken(accessToken, accessTokenSecret);
+		_twitterStream.setOAuthConsumer(_consumerKey, _consumerSecret);
+		AccessToken token = new AccessToken(_accessToken, _accessTokenSecret);
 		_twitterStream.setOAuthAccessToken(token);
 		
-		if (keyWords.length == 0) {
+		if (_keyWords.length == 0) {
 
 			_twitterStream.sample();
 		}
 
 		else {
 
-			FilterQuery query = new FilterQuery().language(new String[]{"en"}).track(keyWords);			
+			FilterQuery query = new FilterQuery().language(new String[]{"en"}).track(_keyWords);			
 			_twitterStream.filter(query);
 		}
 
@@ -128,12 +146,28 @@ public class TwitterFilteredKeywordSpout extends BaseRichSpout {
 
 	@Override
 	public void nextTuple() {
-		Status ret = queue.poll();
+		Status ret = _queue.poll();
 		if (ret == null) {
 			Utils.sleep(50);
 		} else {
-		    	// From the collected tweet, just emit the text.
-			_collector.emit(new Values(ret.getText()));
+		    	// From the collected tweet, just emit the text. Also perform simple cleaning 
+		    	// by replacing multiple whitespaces with a single whitespace.
+		    	String tweet = ret.getText().replaceAll("\\s+", " ");
+		    	_collector.emit(new Values(tweet));
+		    	++_tweetCounter;		    	
+			
+			// Kill the cluster if the tweet counter exceeds the output counter.
+			if (_executionMode.equals("cluster") && _tweetCounter >= MAX_OUTPUT_TWEET_COUNT) {			    
+			    try {
+				_client.killTopology(_topologyName);
+			    } catch (NotAliveException e) {				
+				e.printStackTrace();
+			    } catch (AuthorizationException e) {				
+				e.printStackTrace();
+			    } catch (TException e) {
+				e.printStackTrace();
+			    }
+			}
 
 		}
 	}
