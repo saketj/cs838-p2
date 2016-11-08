@@ -43,8 +43,7 @@ public class Main {
         for (int i = 2; i < args.length; ++i) {
             try {
         	friendsCount.add(Integer.parseInt(args[i]));
-            } catch (NumberFormatException e) {            
-        	System.out.println("Hashtag: " + args[i]);
+            } catch (NumberFormatException e) {
         	hashtags.add(args[i]);
             }
         }
@@ -143,9 +142,12 @@ public class Main {
     
     private static void displayInitMessage(String outputFilepath) {
 	System.out.println("Initializing and stabiling the topology for initial set of tweets...");
+	System.out.println("\n********************************************************************");
 	System.out.println("This may take a minute or two before tweets and "
 		+ "their corresponding top 50% words are emitted every 30 seconds.");
+	System.out.println("********************************************************************\n");
 	System.out.println("Output of the application available at path: " + outputFilepath);
+	System.out.println("Please allow a minute or two before checking the output at the above path");
     }
 
 }

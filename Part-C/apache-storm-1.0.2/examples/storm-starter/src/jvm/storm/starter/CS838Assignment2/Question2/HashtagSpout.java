@@ -25,7 +25,7 @@ public class HashtagSpout extends BaseRichSpout {
     SpoutOutputCollector _collector;
     List<String> _hashtags;
     final static long EMIT_TIME_INTERVAL_IN_MILLISECONDS = 30000;
-    final static int EMIT_HASHTAG_COUNT = 2;
+    int _emit_hashtag_count = 5;
 
     public HashtagSpout() {
         this(false);
@@ -37,6 +37,7 @@ public class HashtagSpout extends BaseRichSpout {
     
     public HashtagSpout(List<String> hashtags) {
 	_hashtags = hashtags;
+	_emit_hashtag_count = (hashtags.size() / 2);
     }
         
     @SuppressWarnings("rawtypes")
@@ -51,7 +52,7 @@ public class HashtagSpout extends BaseRichSpout {
     public void nextTuple() {        
         List<String> randomHashtags = new ArrayList<String>();
         final Random rand = new Random();       
-        for (int i = 0; i < EMIT_HASHTAG_COUNT; ++i) {
+        for (int i = 0; i < _emit_hashtag_count; ++i) {
             String randomHashtag = _hashtags.get(rand.nextInt(_hashtags.size())).toLowerCase();
             if (randomHashtags.contains(randomHashtag)) {
         	--i; continue; // Repeat again, if duplicate.        	
