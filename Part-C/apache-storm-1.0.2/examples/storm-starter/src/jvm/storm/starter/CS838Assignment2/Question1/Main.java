@@ -1,9 +1,15 @@
 package storm.starter.CS838Assignment2.Question1;
 
 import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
+import org.apache.storm.StormSubmitter;
+import org.apache.storm.generated.AlreadyAliveException;
+import org.apache.storm.generated.AuthorizationException;
+import org.apache.storm.generated.InvalidTopologyException;
 import org.apache.storm.hdfs.bolt.HdfsBolt;
 import org.apache.storm.hdfs.bolt.format.DefaultFileNameFormat;
 import org.apache.storm.hdfs.bolt.format.DelimitedRecordFormat;
@@ -18,50 +24,80 @@ import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.utils.Utils;
 
 public class Main {
-	public static void main(String[] args) {
+	private static final String HDFS_ABSOLUTE_URI_PATTERN = "hdfs://[\\d\\.:]+";
+	private static final String TOPOLOGY_NAME = "CS838_Assignment2_PartC_Question1";
+
+	public static void main(String[] args) throws AlreadyAliveException, InvalidTopologyException, AuthorizationException {
         String consumerKey = "k0igr9N6RQzmuKzq7v3VFd5e6"; 
         String consumerSecret = "5qToFqBegZkWvbxxiOoh223ugwrLq8QKPIbVKMsC5BqnhrX1tS"; 
         String accessToken = "605679174-EFFEePsAAesyRHRHsIEqEB2eng89ChkJIZYfaM5h"; 
         String accessTokenSecret = "z06bybvd1YPPbEJttmbM5AjfBHkT1PVpnx0K5Exkfgep2";
         
-        String outputFilepath = args[0];
+        String mode = args[0];
+        String outputFilepath = args[1];
         
         String[] arguments = args.clone();
-        String[] keyWords = Arrays.copyOfRange(arguments, 1, arguments.length);
+        String[] keyWords = Arrays.copyOfRange(arguments, 2, arguments.length);
         
         TopologyBuilder builder = new TopologyBuilder();
         
-        builder.setSpout("twitter", new TwitterFilteredKeywordSpout(consumerKey, consumerSecret,
-                                accessToken, accessTokenSecret, keyWords));
+        builder.setSpout("twitterSpout", new TwitterFilteredKeywordSpout(consumerKey, consumerSecret,
+                                accessToken, accessTokenSecret, keyWords, TOPOLOGY_NAME, mode));
         
-        if (outputFilepath.startsWith("hdfs")) {
+        if (outputFilepath.startsWith("hdfs")) {                       
+            Pattern pat = Pattern.compile(HDFS_ABSOLUTE_URI_PATTERN);
+            Matcher m = pat.matcher(outputFilepath);
+            String fsUrl = null;
+            String fsPath = null;
+            if (m.find()) {
+        	fsUrl = m.group(0);
+        	String uri[] = outputFilepath.split(HDFS_ABSOLUTE_URI_PATTERN);
+        	if (uri.length == 2) {
+        	    fsPath = uri[1];
+        	} else {
+        	    System.err.println("Expected absolute HDFS uri, e.g. hdfs://10.254.0.147:8020/user/ubuntu/output/");
+        	    System.exit(1);
+        	}
+            } else {
+        	System.err.println("Expected absolute HDFS uri, e.g. hdfs://10.254.0.147:8020/user/ubuntu/output/");
+        	System.exit(1);
+            }
+            
             RecordFormat format = new DelimitedRecordFormat();
             SyncPolicy syncPolicy = new CountSyncPolicy(1000);
-            FileRotationPolicy rotationPolicy = new FileSizeRotationPolicy(5.0f, Units.MB);
-            FileNameFormat fileNameFormat = new DefaultFileNameFormat().withPath("/user/ubuntu/cs-838/part-c/question-1/output/");
-            
+            FileRotationPolicy rotationPolicy = new FileSizeRotationPolicy(5.0f, Units.GB);
+            FileNameFormat fileNameFormat = new DefaultFileNameFormat().withPath(fsPath);
+                                    
             HdfsBolt hdfsBolt = new HdfsBolt();
-            hdfsBolt.withFsUrl("hdfs://10.254.0.147:8020")
+            hdfsBolt.withFsUrl(fsUrl)
             	    .withFileNameFormat(fileNameFormat)
             	    .withRecordFormat(format)
             	    .withSyncPolicy(syncPolicy)
             	    .withRotationPolicy(rotationPolicy);
-            builder.setBolt("hdfs", hdfsBolt).shuffleGrouping("twitter");
+            builder.setBolt("hdfsBolt", hdfsBolt).shuffleGrouping("twitterSpout");
         } else {
-            builder.setBolt("print", new LocalFileWriterBolt(outputFilepath))
-                   .shuffleGrouping("twitter");
+            builder.setBolt("localFileWriterBolt", new LocalFileWriterBolt(outputFilepath))
+                   .shuffleGrouping("twitterSpout");
         }
         
                 
-                
-        Config conf = new Config();
-        
-        // TODO: Handle cluster mode as well.
-        LocalCluster cluster = new LocalCluster();
-        
-        cluster.submitTopology("test", conf, builder.createTopology());
-        
-        Utils.sleep(120000);
-        cluster.shutdown();
+        if (mode.equals("cluster")) {        
+            Config conf = new Config();
+            conf.setNumWorkers(20);
+            conf.setMaxSpoutPending(5000);
+            StormSubmitter.submitTopology(TOPOLOGY_NAME, conf, builder.createTopology());
+            displayInitMessage(outputFilepath);
+        } else {
+            Config conf = new Config();                   
+            LocalCluster cluster = new LocalCluster();        
+            cluster.submitTopology("test", conf, builder.createTopology());
+            displayInitMessage(outputFilepath);
+            Utils.sleep(120000);
+            cluster.shutdown();            
+        }
+    }
+	
+    private static void displayInitMessage(String outputFilepath) {		
+	System.out.println("Output of the application available at path: " + outputFilepath);
     }
 }
