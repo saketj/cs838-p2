@@ -1,0 +1,6 @@
+digraph G {
+	node [shape=rectangle]
+       Stage0->Stage1->Stage2->Stage3->Stage11
+       Stage0->Stage2
+       Stage0->Stage3
+}
