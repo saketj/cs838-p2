@@ -61,21 +61,25 @@ public class Main {
         TopologyBuilder builder = new TopologyBuilder();
         
         builder.setSpout("twitterSpout", new TwitterSpout(consumerKey, consumerSecret,
-                                accessToken, accessTokenSecret, hashtags));
+                                accessToken, accessTokenSecret, hashtags), 4)
+               .setNumTasks(5);
         builder.setSpout("hashtagSpout", new HashtagSpout(hashtags));
         builder.setSpout("friendsCountSpout", new FriendsCountSpout(friendsCount));
-        builder.setBolt("tweetProcessorBolt", new TweetProcessorBolt(hashtags))
+        builder.setBolt("tweetProcessorBolt", new TweetProcessorBolt(hashtags), 2)
+        	.setNumTasks(5)
                 .shuffleGrouping("twitterSpout")
                 .allGrouping("hashtagSpout")
                 .allGrouping("friendsCountSpout");        
-        builder.setBolt("tweetSplitWordBolt", new TweetSplitWordBolt(stopwords))
+        builder.setBolt("tweetSplitWordBolt", new TweetSplitWordBolt(stopwords), 2)
+        	.setNumTasks(5)
         	.shuffleGrouping("tweetProcessorBolt");        
-        builder.setBolt("intermediateRankingBolt", new IntermediateRankingBolt())
+        builder.setBolt("intermediateRankingBolt", new IntermediateRankingBolt(), 2)
+        	.setNumTasks(5)
         	.fieldsGrouping("tweetSplitWordBolt", new Fields("word"));
         builder.setBolt("totalRankingsBolt", new TotalRankingsBolt(), 1)
         	.globalGrouping("intermediateRankingBolt");
 		
-        builder.setBolt("tweetAccumulatorBolt", new TweetAccumulatorBolt())
+        builder.setBolt("tweetAccumulatorBolt", new TweetAccumulatorBolt())        	
 		.shuffleGrouping("tweetProcessorBolt")
 		.allGrouping("totalRankingsBolt", "emitCounterStream");
         
@@ -127,7 +131,7 @@ public class Main {
         if (mode.equals("cluster")) {        
             Config conf = new Config();
             conf.setNumWorkers(20);
-            conf.setMaxSpoutPending(5000);
+            conf.setMaxSpoutPending(50000);
             StormSubmitter.submitTopology(TOPOLOGY_NAME, conf, builder.createTopology());
             displayInitMessage(outputFilepath);
         } else {
