@@ -42,7 +42,8 @@ public class Main {
         TopologyBuilder builder = new TopologyBuilder();
         
         builder.setSpout("twitterSpout", new TwitterFilteredKeywordSpout(consumerKey, consumerSecret,
-                                accessToken, accessTokenSecret, keyWords, TOPOLOGY_NAME, mode));
+                                accessToken, accessTokenSecret, keyWords, TOPOLOGY_NAME, mode), 5)
+        	.setNumTasks(4);
         
         if (outputFilepath.startsWith("hdfs")) {                       
             Pattern pat = Pattern.compile(HDFS_ABSOLUTE_URI_PATTERN);
@@ -74,7 +75,7 @@ public class Main {
             	    .withRecordFormat(format)
             	    .withSyncPolicy(syncPolicy)
             	    .withRotationPolicy(rotationPolicy);
-            builder.setBolt("hdfsBolt", hdfsBolt).shuffleGrouping("twitterSpout");
+            builder.setBolt("hdfsBolt", hdfsBolt, 2).shuffleGrouping("twitterSpout").setNumTasks(5);
         } else {
             builder.setBolt("localFileWriterBolt", new LocalFileWriterBolt(outputFilepath))
                    .shuffleGrouping("twitterSpout");

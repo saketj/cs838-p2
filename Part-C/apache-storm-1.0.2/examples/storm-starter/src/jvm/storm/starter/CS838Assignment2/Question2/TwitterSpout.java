@@ -70,7 +70,7 @@ public class TwitterSpout extends BaseRichSpout {
 	@Override
 	public void open(Map conf, TopologyContext context,
 			SpoutOutputCollector collector) {
-		queue = new LinkedBlockingQueue<Status>(1000);
+		queue = new LinkedBlockingQueue<Status>(1000000);
 		_collector = collector;
 
 		StatusListener listener = new StatusListener() {
@@ -134,7 +134,7 @@ public class TwitterSpout extends BaseRichSpout {
 	public void nextTuple() {
 		Status ret = queue.poll();
 		if (ret == null) {
-			Utils.sleep(50);
+			Utils.sleep(10);
 		} else {
 			_collector.emit(new Values(ret));
 
