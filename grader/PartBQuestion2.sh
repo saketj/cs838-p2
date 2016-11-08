@@ -1,7 +1,9 @@
 #!/bin/bash
 # Assumes position of streaming directory
 # Rest of the stuff can be customised by changing variables below
-
+source /home/ubuntu/run.sh
+echo "This application expects apache spark, hdfs and hive metastore to be running on the cluster "
+sleep 1
 datasetStreamDirectory=/user/ubuntu/cs-838/part-b/workload/dataset-stream/
 checkpointDirectory=/user/ubuntu/cs-838/part-b/question-2/checkpoint
 outputDirectory=/user/ubuntu/cs-838/part-b/question-2/output

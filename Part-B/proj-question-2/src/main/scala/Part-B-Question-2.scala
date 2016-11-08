@@ -34,8 +34,6 @@ object PartBQuestion2 {
 	val query = mtUsers.writeStream
 	    .format("parquet")	    
 	    .trigger(ProcessingTime.create("10 seconds"))
-	    .option("truncate", "false")
-	    .option("numRows", 2147483646)
 	    .start(outputDirectory)
 	query.awaitTermination()
 	}
