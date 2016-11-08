@@ -11,8 +11,11 @@ import java.util.regex.Pattern;
 
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
+import org.apache.storm.StormSubmitter;
+import org.apache.storm.generated.AlreadyAliveException;
+import org.apache.storm.generated.AuthorizationException;
+import org.apache.storm.generated.InvalidTopologyException;
 import org.apache.storm.hdfs.bolt.HdfsBolt;
-import org.apache.storm.hdfs.bolt.format.DelimitedRecordFormat;
 import org.apache.storm.hdfs.bolt.format.FileNameFormat;
 import org.apache.storm.hdfs.bolt.format.RecordFormat;
 import org.apache.storm.hdfs.bolt.rotation.FileRotationPolicy;
@@ -26,16 +29,18 @@ public class Main {
     
     private static final String STOPWORD_FILEPATH = "src/jvm/storm/starter/CS838Assignment2/Question2/stopwords.txt";
     private static final String HDFS_ABSOLUTE_URI_PATTERN = "hdfs://[\\d\\.:]+";
+    private static final String TOPOLOGY_NAME = "CS838_Assignment2_PartC_Question2";
     
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, AlreadyAliveException, InvalidTopologyException, AuthorizationException {
         String consumerKey = "k0igr9N6RQzmuKzq7v3VFd5e6"; 
         String consumerSecret = "5qToFqBegZkWvbxxiOoh223ugwrLq8QKPIbVKMsC5BqnhrX1tS"; 
         String accessToken = "605679174-EFFEePsAAesyRHRHsIEqEB2eng89ChkJIZYfaM5h"; 
         String accessTokenSecret = "z06bybvd1YPPbEJttmbM5AjfBHkT1PVpnx0K5Exkfgep2";        
         List<String> hashtags = new ArrayList<String>();
         List<Integer> friendsCount = new ArrayList<Integer>();
-        String outputFilepath = args[0];
-        for (int i = 1; i < args.length; ++i) {
+        String mode = args[0];
+        String outputFilepath = args[1];
+        for (int i = 2; i < args.length; ++i) {
             try {
         	friendsCount.add(Integer.parseInt(args[i]));
             } catch (NumberFormatException e) {            
@@ -120,15 +125,27 @@ public class Main {
         }
                 
                 
-        Config conf = new Config();
-        
-        
-        LocalCluster cluster = new LocalCluster();
-        
-        cluster.submitTopology("test", conf, builder.createTopology());
-        
-        Utils.sleep(240000);
-        cluster.shutdown();
+        if (mode.equals("cluster")) {        
+            Config conf = new Config();
+            conf.setNumWorkers(20);
+            conf.setMaxSpoutPending(5000);
+            StormSubmitter.submitTopology(TOPOLOGY_NAME, conf, builder.createTopology());
+            displayInitMessage(outputFilepath);
+        } else {
+            Config conf = new Config();                   
+            LocalCluster cluster = new LocalCluster();        
+            cluster.submitTopology("test", conf, builder.createTopology());
+            displayInitMessage(outputFilepath);
+            Utils.sleep(120000);
+            cluster.shutdown();            
+        }                
+    }
+    
+    private static void displayInitMessage(String outputFilepath) {
+	System.out.println("Initializing and stabiling the topology for initial set of tweets...");
+	System.out.println("This may take a minute or two before tweets and "
+		+ "their corresponding top 50% words are emitted every 30 seconds.");
+	System.out.println("Output of the application available at path: " + outputFilepath);
     }
 
 }

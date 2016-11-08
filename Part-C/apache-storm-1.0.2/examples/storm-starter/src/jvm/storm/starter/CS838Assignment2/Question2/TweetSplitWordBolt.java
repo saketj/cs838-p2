@@ -31,8 +31,12 @@ public class TweetSplitWordBolt extends BaseRichBolt {
 	Integer emitCounter = (Integer) tuple.getValueByField("emitCounter");
 	String tweet = (String) tuple.getValueByField("tweet");
 	String words[] = tweet.split("\\s+");
-	for (String word : words) {
+	for (String word : words) {	    
 	    String emitWord = word.trim().toLowerCase();
+	    // Remove '#' from hashtags, if at all.
+	    if (emitWord.charAt(0) == '#') {
+		emitWord = emitWord.substring(1);
+	    }
 	    if (!isStopWord(emitWord)) {
 		_collector.emit(new Values(emitCounter, emitWord));		
 	    }
