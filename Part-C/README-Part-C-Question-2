@@ -1,0 +1,92 @@
+----------------------------
+README: Part C - Question 2
+----------------------------
+
+------------------
+Application Logic:
+------------------
+ - This Storm application consists of three spouts and seven bolts. The application has a flexible
+   design that can scale out to process a large number of tweets and can compute the top 50% of
+   words in parallel. This is achieved by creating a data-partitioned intermediate ranking bolt
+   that computes the top 50% words that it receives for its own partition. This intermediate
+   ranking bolt then sends its stream of top 50% words to a final total ranking bolt that generates
+   the final list of top 50% words.
+ - The topology has the following connections:
+   - The TweetProcessorBolt continuously receives a stream of tweets from the TwitterSpout.
+   - Every 30 seconds, it also receives a list of hashtags from the HashtagSpout and a random number
+     from the FriendsCountSpout.
+   - The TweetProcessorBolt inserts a TickTuple every 30 seconds into its input, which triggers
+     further downstream processing.
+   - The TweetProcessorBolt emits tweets to a TweetAccumulator as well as a TweetSplitWordBolt.
+   - The purpose of the TweetAccumulator is to buffer the tweets until the final TotalRankingBolt has
+     computed the final rankings of the word for that interval.
+   - The purpose of the TweetSplitWordBolt is to split the tweet into a set of non-stop words.
+     These non-stop words are then partitioned to various IntermediateRankingBolt tasks that
+     compute the top 50% of words for their own partitions.
+   - The IntermediateRanking bolt emits the intermediate ranked words to the TotalRankingBolt, which
+     generates the final rankings.
+   - The TotalRankingBolt then sends an single emitCounter tuple to the TweetAccumulator that
+     triggers it to send all the buffered output tweets for that interval to the final HdfsTweetWriterBolt.
+   - The TotalRankingBolt then, in parallel, also sends the final ranked words to the HdfsTopWordWriterBolt.
+ - To ensure consistent processing of tweets and their top 50% words, the TweetProcessorBolt
+   that emits a TickTuple every 30 seconds. That TickTuple increments an emitCounter that is attached
+   with every tuple being emitted in the entire topology. Based on the emitCounter value, we
+   decide if it is a start of a new interval. This ensures consistent processing of tweets in the topology.
+
+
+ ----------------------
+ Source Code Directory:
+ ----------------------
+  - The code for this application consists of the following JAVA files:
+     - group-27/Part-C/apache-storm-1.0.2/examples/storm-starter/
+       - src/jvm/storm/starter/CS838Assignment2/Question2/
+         - EmitCounterRotationPolicy.java
+         - EmitRecordFormat.java
+         - FriendsCountSpout.java
+         - HashtagSpout.java
+         - IntermediateRankingBolt.java
+         - Main.java
+         - OutputFileNameFormat.java
+         - TotalRankingsBolt.java
+         - TweetAccumulatorBolt.java
+         - TweetProcessorBolt.java
+         - TweetSplitWordBolt.java
+         - TwitterSpout.java
+         - Word.java
+         - stopwords.txt
+
+-----------------------
+Compiling the application:
+-----------------------
+To compile the application, run the following command on the console:
+> cd group-27/Part-C/apache-storm-1.0.2/examples/storm-starter
+> mvn clean install -DskipTests=true; mvn package -DskipTests=true;
+
+-----------------------
+Running the application:
+-----------------------
+To run the application, run the following command on the console:
+> cd group-27/Part-C/apache-storm-1.0.2/examples/storm-starter
+> storm jar target/storm-starter-1.0.2.jar storm.starter.CS838Assignment2.Question2.Main <MODE> <OUTPUT_DIR> <FRIENDS_COUNT> <HASHTAGS>
+
+ - <MODE> can be cluster/local.
+ - <OUTPUT_DIR> is an HDFS file path.
+ - <FRIENDS_COUNT> is a list of space separated friendsCount.
+ - <HASHTAGS> is a list of space separated hashtags.
+
+----------------------
+Output format:
+----------------------
+ - We write the output for each interval in separate files. The tweets are written to a file
+   tweets-<emitCounter>.txt and the top words are written to a file topWords-<emitCounter>.txt at
+   the given HDFS file output directory path.
+ - Record Format of tweets-<emitCounter>.txt:   <emitCounter>, <tweet_text>
+ - Record Format of topWords-<emitCounter>.txt: <emitCounter>, <word>, <word_frequency>
+
+------------------------
+Stopping the application:
+------------------------
+To stop the application, run the following command on the console:
+> storm kill CS838_Assignment2_PartC_Question2
+
+- In the cluster mode, the application runs indefinitely until stopped.

@@ -1,0 +1,59 @@
+----------------------------
+README: Part C - Question 1
+----------------------------
+
+------------------
+Application Logic:
+------------------
+ - This Storm application consists of a TwitterFilteredKeyword Spout that uses the Twitter4j library
+   to stream tweets in English language from Twitter that matches the specified set of keywords.
+ - This TwitterFilteredKeyword Spout connects to a HdfsBolt that writes the emitted tweets to
+   a given Hdfs output path.
+ - We achieve high ingestion parallelism by setting the number of executors to 5 & number of tasks to
+   4 and setting the HDFS output parallelism to 5. The HdfsBolt writes in parallel to 5 Hdfs files.
+
+----------------------
+Source Code Directory:
+----------------------
+ - The code for this application consists of the following JAVA files:
+    - group-27/Part-C/apache-storm-1.0.2/examples/storm-starter/
+      - src/jvm/storm/starter/CS838Assignment2/Question1/
+        - Main.java
+        - TwitterFilteredKeywordSpout.java
+        - LocalFileWriterBolt.java
+
+-----------------------
+Compiling the application:
+-----------------------
+To compile the application, run the following command on the console:
+> cd group-27/Part-C/apache-storm-1.0.2/examples/storm-starter
+> mvn clean install -DskipTests=true; mvn package -DskipTests=true;
+
+-----------------------
+Running the application:
+-----------------------
+To run the application, run the following command on the console:
+> cd group-27/Part-C/apache-storm-1.0.2/examples/storm-starter
+> storm jar target/storm-starter-1.0.2.jar storm.starter.CS838Assignment2.Question1.Main <MODE> <OUTPUT_DIR> <KEYWORDS>
+
+ - <MODE> can be cluster/local.
+ - <OUTPUT_DIR> is an HDFS file path.
+ - <KEYWORDS> is a list of space separated keywords.
+
+
+------------------------
+Stopping the application:
+------------------------
+To stop the application, run the following command on the console:
+> storm kill CS838_Assignment2_PartC_Question1
+
+- In the cluster mode, the application automatically stops after collecting 500,000 tweets.
+
+
+------------------------
+Collected Tweet Dataset:
+------------------------
+We have already collected a Tweet Dataset consisting of approximately 500,000 tweets at the
+following HDFS path in our assigned Cloudlab cluster using our Storm application:
+
+> hdfs://10.254.0.147:8020/user/ubuntu/cs-838/part-c/question-1/CollectedTweetDataset
