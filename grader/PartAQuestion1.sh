@@ -7,5 +7,5 @@ numberOfIterations=10
 numberOfPartitions=40
 jarFile=/home/ubuntu/cs838-p2/Part-A/sbt-proj-question-1/target/scala-2.10/part-a-question-1_2.10-1.0.jar
 echo Running Spark Code
-spark-submit --class "PartAQuestion1" --master $sparkMasterURL $jarFile $dataset $numberOfPartitions $numberOfIterations > PartAQuestion1Output.txt 2>&1
+spark-submit --class "PartAQuestion1" --master $sparkMasterURL $jarFile $dataset $numberOfPartitions $numberOfIterations > PartAQuestion1Output.txt
 cat PartAQuestion1Output.txt
